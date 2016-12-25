@@ -46,19 +46,7 @@ class CloudFlare:
             'X-Auth-Email': email,
             'Content-Type': 'application/json'
         }
-
-        # Initialize current zone
-        zones_content = self.request(self.api_url, 'get')
-        try:
-            zone = [zone for zone in zones_content['result'] if zone['name'] == domain][0]
-        except IndexError:
-            raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
-                               .format(domain=domain))
-        self.zone = zone
-
-        # Initialize dns_records of current zone
-        dns_content = self.request(self.api_url + '/' + zone['id'] + '/dns_records', 'get')
-        self.dns_records = dns_content['result']
+        self.setup_zone()
 
     def request(self, url, method, data=None):
         """
@@ -69,13 +57,42 @@ class CloudFlare:
         :return:
         """
         method = getattr(requests, method)
-        print(url, self.headers, data)
-        response = method(url, headers=self.headers, data=data)
+        response = method(
+            url,
+            headers=self.headers,
+            data=self.process_json_for_cloudflare(data)
+        )
         content = response.json()
         if response.status_code != 200:
             print(content)
             raise requests.HTTPError(content['message'])
         return content
+
+    def setup_zone(self):
+        """
+        Setup zone for current domain.
+        It will also setup the dns records of the zone
+        :return:
+        """
+        # Initialize current zone
+        zones_content = self.request(self.api_url, 'get')
+        try:
+            zone = [zone for zone in zones_content['result'] if zone['name'] == self.domain][0]
+        except IndexError:
+            raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
+                               .format(domain=self.domain))
+        self.zone = zone
+
+        # Initialize dns_records of current zone
+        dns_content = self.request(self.api_url + '/' + zone['id'] + '/dns_records', 'get')
+        self.dns_records = dns_content['result']
+
+    def refresh(self):
+        """
+        Shortcut for setup zone
+        :return:
+        """
+        self.setup_zone()
 
     def get_record(self, dns_type, name):
         """
@@ -199,6 +216,15 @@ class CloudFlare:
         if record['content'] != ip_address:
             self.update_record(dns_type, self.zone['name'], ip_address)
             print('Successfully updated IP address from {old_ip} to {new_ip}'
-                  .format(old_ip=record.content, new_ip=ip_address))
+                  .format(old_ip=record['content'], new_ip=ip_address))
         else:
             print('IP address on CloudFlare is same as your current address')
+
+    @staticmethod
+    def process_json_for_cloudflare(data_dict):
+        """
+        Need to process the data because of the odd format requirement from CloudFlare
+        :param data_dict:
+        :return:
+        """
+        return str(data_dict).replace('"', 'double_quote').replace("'", '"').replace('double_quote', "'")

@@ -75,38 +75,9 @@ class CloudFlare:
         try:
             record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
         except IndexError:
-            return None
+            raise RecordNotFound(
+                'Cannot find the specified dns record in domain {domain}'.format(domain=self.domain))
         return record
-
-    def update_record(self, dns_type, name, content, ttl=1, proxied=False):
-        """
-        Update dns record
-        :param dns_type:
-        :param name:
-        :param content:
-        :param ttl:
-        :param proxied:
-        :return:
-        """
-        record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
-        if record is None:
-            raise RecordNotFound('Cannot find the specified dns record in domain {domain}'.format(domain=self.domain))
-
-        data = {
-            'type': dns_type,
-            'name': name,
-            'content': content
-        }
-        if ttl != 1:
-            data.ttl = ttl
-        if proxied:
-            data.proxied = proxied
-        self.request(
-            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records/' + record.id),
-            'put',
-            data=data
-        )
-        print('DNS record successfully updated')
 
     def create_record(self, dns_type, name, content, ttl=1, proxied=False):
         """
@@ -127,12 +98,42 @@ class CloudFlare:
             data.ttl = ttl
         if proxied:
             data.proxied = proxied
-        self.request(
+        content = self.request(
             urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records'),
             'put',
             data=data
         )
         print('DNS record successfully created')
+        return content.result
+
+    def update_record(self, dns_type, name, content, ttl=1, proxied=False):
+        """
+        Update dns record
+        :param dns_type:
+        :param name:
+        :param content:
+        :param ttl:
+        :param proxied:
+        :return:
+        """
+        record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
+
+        data = {
+            'type': dns_type,
+            'name': name,
+            'content': content
+        }
+        if ttl != 1:
+            data.ttl = ttl
+        if proxied:
+            data.proxied = proxied
+        content = self.request(
+            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records/' + record.id),
+            'put',
+            data=data
+        )
+        print('DNS record successfully updated')
+        return content.result
 
     def create_or_update_record(self, dns_type, name, content, ttl=1, proxied=False):
         """
@@ -145,6 +146,20 @@ class CloudFlare:
         :return:
         """
         try:
-            self.update_record(dns_type, name, content, ttl, proxied)
-        except IndexError:
-            self.create_record(dns_type, name, content, ttl, proxied)
+            return self.update_record(dns_type, name, content, ttl, proxied)
+        except RecordNotFound:
+            return self.create_record(dns_type, name, content, ttl, proxied)
+
+    def delete_record(self, dns_type, name):
+        """
+        Delete a dns record
+        :param dns_type:
+        :param name:
+        :return:
+        """
+        record = self.get_record(dns_type, name)
+        content = self.request(
+            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records/' + record.id),
+            'delete'
+        )
+        return content.result.id

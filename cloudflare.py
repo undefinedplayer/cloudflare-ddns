@@ -1,5 +1,6 @@
-import sys
 import requests
+import urllib.parse
+from exceptions import ZoneNotFound, RecordNotFound
 
 
 class CloudFlare:
@@ -42,8 +43,7 @@ class CloudFlare:
         try:
             zone = [ zone for zone in zones_content.result if zone.name == domain][0]
         except IndexError:
-            print('Cannot find the domain you specified.')
-            sys.exit(1)
+            raise ZoneNotFound('Cannot find zone information for the domain {domain}.'.format(domain=domain))
         self.zone = zone
 
         # Initialize dns_records of current zone
@@ -65,6 +65,19 @@ class CloudFlare:
             raise requests.HTTPError(content.message)
         return content
 
+    def get_record(self, dns_type, name):
+        """
+        Get a dns record
+        :param dns_type:
+        :param name:
+        :return:
+        """
+        try:
+            record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
+        except IndexError:
+            return None
+        return record
+
     def update_record(self, dns_type, name, content, ttl=1, proxied=False):
         """
         Update dns record
@@ -75,24 +88,63 @@ class CloudFlare:
         :param proxied:
         :return:
         """
-        try:
-            record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
-        except IndexError:
-            print('Cannot find the specified dns record in domain {domain}'.format(domain=self.domain))
-            sys.exit(1)
+        record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
+        if record is None:
+            raise RecordNotFound('Cannot find the specified dns record in domain {domain}'.format(domain=self.domain))
 
-        data = {content: content}
+        data = {
+            'type': dns_type,
+            'name': name,
+            'content': content
+        }
         if ttl != 1:
             data.ttl = ttl
         if proxied:
             data.proxied = proxied
         self.request(
-            self.api_url + '/' + self.zone.id + '/dns_records/' + record.id,
+            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records/' + record.id),
             'put',
             data=data
         )
         print('DNS record successfully updated')
 
+    def create_record(self, dns_type, name, content, ttl=1, proxied=False):
+        """
+        Create a dns record
+        :param dns_type:
+        :param name:
+        :param content:
+        :param ttl:
+        :param proxied:
+        :return:
+        """
+        data = {
+            'type': dns_type,
+            'name': name,
+            'content': content
+        }
+        if ttl != 1:
+            data.ttl = ttl
+        if proxied:
+            data.proxied = proxied
+        self.request(
+            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records'),
+            'put',
+            data=data
+        )
+        print('DNS record successfully created')
 
-
-
+    def create_or_update_record(self, dns_type, name, content, ttl=1, proxied=False):
+        """
+        Create a dns record. Update it if the record already exists.
+        :param dns_type:
+        :param name:
+        :param content:
+        :param ttl:
+        :param proxied:
+        :return:
+        """
+        try:
+            self.update_record(dns_type, name, content, ttl, proxied)
+        except IndexError:
+            self.create_record(dns_type, name, content, ttl, proxied)

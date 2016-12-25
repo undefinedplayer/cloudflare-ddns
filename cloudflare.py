@@ -1,11 +1,15 @@
-import requests
+"""
+CloudFlare dns tools.
+"""
+import sys
 import urllib.parse
-from exceptions import ZoneNotFound, RecordNotFound
+import requests
+from .exceptions import ZoneNotFound, RecordNotFound
 
 
 class CloudFlare:
     """
-    CloudFlare dns tools
+    CloudFlare dns tools class
     """
     api_url = 'https://api.cloudflare.com/client/v4/zones/'
 
@@ -20,6 +24,11 @@ class CloudFlare:
     zone = None
 
     dns_records = None
+
+    public_ip_finder = (
+        'https: // jsonip.com /',
+        'https://ifconfig.co/json'
+    )
 
     def __init__(self, email: str, api_key: str, domain: str):
         """
@@ -41,9 +50,10 @@ class CloudFlare:
         # Initialize current zone
         zones_content = self.request(self.api_url, 'get')
         try:
-            zone = [ zone for zone in zones_content.result if zone.name == domain][0]
+            zone = [zone for zone in zones_content.result if zone.name == domain][0]
         except IndexError:
-            raise ZoneNotFound('Cannot find zone information for the domain {domain}.'.format(domain=domain))
+            raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
+                               .format(domain=domain))
         self.zone = zone
 
         # Initialize dns_records of current zone
@@ -73,20 +83,21 @@ class CloudFlare:
         :return:
         """
         try:
-            record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
+            record = [record for record in self.dns_records
+                      if record.type == dns_type and record.name == name][0]
         except IndexError:
             raise RecordNotFound(
-                'Cannot find the specified dns record in domain {domain}'.format(domain=self.domain))
+                'Cannot find the specified dns record in domain {domain}'
+                .format(domain=self.domain))
         return record
 
-    def create_record(self, dns_type, name, content, ttl=1, proxied=False):
+    def create_record(self, dns_type, name, content, **kwargs):
         """
         Create a dns record
         :param dns_type:
         :param name:
         :param content:
-        :param ttl:
-        :param proxied:
+        :param kwargs:
         :return:
         """
         data = {
@@ -94,10 +105,10 @@ class CloudFlare:
             'name': name,
             'content': content
         }
-        if ttl != 1:
-            data.ttl = ttl
-        if proxied:
-            data.proxied = proxied
+        if kwargs.get('ttl') != 1:
+            data.ttl = kwargs['ttl']
+        if kwargs.get('proxied'):
+            data.proxied = kwargs['proxied']
         content = self.request(
             urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records'),
             'put',
@@ -106,49 +117,46 @@ class CloudFlare:
         print('DNS record successfully created')
         return content.result
 
-    def update_record(self, dns_type, name, content, ttl=1, proxied=False):
+    def update_record(self, dns_type, name, content, **kwargs):
         """
         Update dns record
         :param dns_type:
         :param name:
         :param content:
-        :param ttl:
-        :param proxied:
+        :param kwargs:
         :return:
         """
-        record = [record for record in self.dns_records if record.type == dns_type and record.name == name][0]
-
+        record = self.get_record(dns_type, name)
         data = {
             'type': dns_type,
             'name': name,
             'content': content
         }
-        if ttl != 1:
-            data.ttl = ttl
-        if proxied:
-            data.proxied = proxied
+        if kwargs.get('ttl') != 1:
+            data.ttl = kwargs['ttl']
+        if kwargs.get('proxied'):
+            data.proxied = kwargs['proxied']
         content = self.request(
-            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records/' + record.id),
+            urllib.parse.urljoin(self.api_url, self.zone.id + '/dns_records/' + record.id),
             'put',
             data=data
         )
         print('DNS record successfully updated')
         return content.result
 
-    def create_or_update_record(self, dns_type, name, content, ttl=1, proxied=False):
+    def create_or_update_record(self, dns_type, name, content, **kwargs):
         """
         Create a dns record. Update it if the record already exists.
         :param dns_type:
         :param name:
         :param content:
-        :param ttl:
-        :param proxied:
+        :param kwargs:
         :return:
         """
         try:
-            return self.update_record(dns_type, name, content, ttl, proxied)
+            return self.update_record(dns_type, name, content, **kwargs)
         except RecordNotFound:
-            return self.create_record(dns_type, name, content, ttl, proxied)
+            return self.create_record(dns_type, name, content, **kwargs)
 
     def delete_record(self, dns_type, name):
         """
@@ -159,7 +167,31 @@ class CloudFlare:
         """
         record = self.get_record(dns_type, name)
         content = self.request(
-            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records/' + record.id),
+            urllib.parse.urljoin(self.api_url, self.zone.id + '/dns_records/' + record.id),
             'delete'
         )
         return content.result.id
+
+    def sync_dns_from_my_ip(self, name, dns_type='A'):
+        """
+        Sync dns from my public ip address.
+        It will not do update if ip address in dns record is already same as
+        current public ip address.
+        :param name:
+        :param dns_type:
+        :return:
+        """
+        ip_address = ''
+        for finder in self.public_ip_finder:
+            result = requests.get(finder)
+            if result.status_code == 200:
+                ip_address = result.json()['ip']
+                break
+        if ip_address == '':
+            print('Either of public ip finder is not working. Please try later')
+            sys.exit(1)
+        record = self.get_record(dns_type, name)
+        if record.content != ip_address:
+            self.update_record(dns_type, name, ip_address)
+            print('Successfully updated ip address from {old_ip} to {new_ip}'
+                  .format(old_ip=record.content, new_ip=ip_address))

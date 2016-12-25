@@ -26,8 +26,8 @@ class CloudFlare:
     dns_records = None
 
     public_ip_finder = (
-        'https: // jsonip.com /',
-        'https://ifconfig.co/json'
+        'https://jsonip.com/',
+        'https://ifconfig.co/json/'
     )
 
     def __init__(self, email: str, api_key: str, domain: str):
@@ -50,15 +50,15 @@ class CloudFlare:
         # Initialize current zone
         zones_content = self.request(self.api_url, 'get')
         try:
-            zone = [zone for zone in zones_content.result if zone.name == domain][0]
+            zone = [zone for zone in zones_content['result'] if zone['name'] == domain][0]
         except IndexError:
             raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
                                .format(domain=domain))
         self.zone = zone
 
         # Initialize dns_records of current zone
-        dns_content = self.request(self.api_url + '/' + zone.id + '/dns_records', 'get')
-        self.dns_records = dns_content.result
+        dns_content = self.request(self.api_url + '/' + zone['id'] + '/dns_records', 'get')
+        self.dns_records = dns_content['result']
 
     def request(self, url, method, data=None):
         """
@@ -69,10 +69,12 @@ class CloudFlare:
         :return:
         """
         method = getattr(requests, method)
+        print(url, self.headers, data)
         response = method(url, headers=self.headers, data=data)
         content = response.json()
         if response.status_code != 200:
-            raise requests.HTTPError(content.message)
+            print(content)
+            raise requests.HTTPError(content['message'])
         return content
 
     def get_record(self, dns_type, name):
@@ -84,7 +86,7 @@ class CloudFlare:
         """
         try:
             record = [record for record in self.dns_records
-                      if record.type == dns_type and record.name == name][0]
+                      if record['type'] == dns_type and record['name'] == name][0]
         except IndexError:
             raise RecordNotFound(
                 'Cannot find the specified dns record in domain {domain}'
@@ -105,17 +107,19 @@ class CloudFlare:
             'name': name,
             'content': content
         }
-        if kwargs.get('ttl') != 1:
-            data.ttl = kwargs['ttl']
-        if kwargs.get('proxied'):
-            data.proxied = kwargs['proxied']
+        if kwargs.get('ttl') and kwargs['ttl'] != 1:
+            data['ttl'] = kwargs['ttl']
+        if kwargs.get('proxied') is False:
+            data['proxied'] = False
+        else:
+            data['proxied'] = True
         content = self.request(
-            urllib.parse.urljoin(self.api_url, self.zone.id, self.zone.id + '/dns_records'),
+            urllib.parse.urljoin(self.api_url, self.zone['id'], self.zone['id'] + '/dns_records'),
             'put',
             data=data
         )
         print('DNS record successfully created')
-        return content.result
+        return content['result']
 
     def update_record(self, dns_type, name, content, **kwargs):
         """
@@ -132,17 +136,19 @@ class CloudFlare:
             'name': name,
             'content': content
         }
-        if kwargs.get('ttl') != 1:
-            data.ttl = kwargs['ttl']
-        if kwargs.get('proxied'):
-            data.proxied = kwargs['proxied']
+        if kwargs.get('ttl') and kwargs['ttl'] != 1:
+            data['ttl'] = kwargs['ttl']
+        if kwargs.get('proxied') is False:
+            data['proxied'] = False
+        else:
+            data['proxied'] = True
         content = self.request(
-            urllib.parse.urljoin(self.api_url, self.zone.id + '/dns_records/' + record.id),
+            urllib.parse.urljoin(self.api_url, self.zone['id'] + '/dns_records/' + record['id']),
             'put',
             data=data
         )
         print('DNS record successfully updated')
-        return content.result
+        return content['result']
 
     def create_or_update_record(self, dns_type, name, content, **kwargs):
         """
@@ -167,17 +173,16 @@ class CloudFlare:
         """
         record = self.get_record(dns_type, name)
         content = self.request(
-            urllib.parse.urljoin(self.api_url, self.zone.id + '/dns_records/' + record.id),
+            urllib.parse.urljoin(self.api_url, self.zone['id'] + '/dns_records/' + record['id']),
             'delete'
         )
-        return content.result.id
+        return content['result']['id']
 
-    def sync_dns_from_my_ip(self, name, dns_type='A'):
+    def sync_dns_from_my_ip(self, dns_type='A'):
         """
         Sync dns from my public ip address.
         It will not do update if ip address in dns record is already same as
         current public ip address.
-        :param name:
         :param dns_type:
         :return:
         """
@@ -190,8 +195,10 @@ class CloudFlare:
         if ip_address == '':
             print('Either of public ip finder is not working. Please try later')
             sys.exit(1)
-        record = self.get_record(dns_type, name)
-        if record.content != ip_address:
-            self.update_record(dns_type, name, ip_address)
-            print('Successfully updated ip address from {old_ip} to {new_ip}'
+        record = self.get_record(dns_type, self.zone['name'])
+        if record['content'] != ip_address:
+            self.update_record(dns_type, self.zone['name'], ip_address)
+            print('Successfully updated IP address from {old_ip} to {new_ip}'
                   .format(old_ip=record.content, new_ip=ip_address))
+        else:
+            print('IP address on CloudFlare is same as your current address')

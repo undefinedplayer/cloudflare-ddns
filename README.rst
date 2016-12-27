@@ -14,30 +14,30 @@ Installation
 Examples
 --------
 
-1. Sync your public IP address to dns record on CloudFlare
+#. Sync your public ip address to dns record on CloudFlare
 
-- Command line
+    - Use command in command line
 
-.. code:: shell
+    .. code:: shell
 
-    cloudflare-ddns email api_key domain
+        cloudflare-ddns email api_key domain
 
-- Python execute package
+    - Execute python package in command line
 
-.. code:: shell
+    .. code:: shell
 
-    python -m cloudflare_ddns email api_key domain
+        python -m cloudflare_ddns email api_key domain
 
 
-- Python code
+    - Python code
 
-.. code:: python
+    .. code:: python
 
-    from cloudflare_ddns import CloudFlare
-    cf = CloudFlare(email, api_key, domain)
-    cf.sync_dns_from_my_ip() #Successfully updated IP address from xx.xx.xx.xx to xx.xx.xx.xx
+        from cloudflare_ddns import CloudFlare
+        cf = CloudFlare(email, api_key, domain)
+        cf.sync_dns_from_my_ip() # Successfully updated IP address from xx.xx.xx.xx to xx.xx.xx.xx
 
-2. RESTful dns record operation
+#. RESTful dns record operation
 
 .. code:: python
 

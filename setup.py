@@ -13,7 +13,7 @@ setup(
     version='0.1rc1',
     description='DDNS script to sync public IP address to CloudFlare dns records',
     long_description=README,
-    url='https://github.com/shlinx/cloudflare',
+    url='https://github.com/shlinx/cloudflare-ddns',
     author='Shawn Lin',
     author_email='shawnxiaolin@gmail.com',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),

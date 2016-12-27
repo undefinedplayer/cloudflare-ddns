@@ -10,7 +10,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='cloudflare-ddns',
-    version='0.1rc1',
+    version='1.0.0',
     description='DDNS script to sync public IP address to CloudFlare dns records',
     long_description=README,
     url='https://github.com/shlinx/cloudflare-ddns',

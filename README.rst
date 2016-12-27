@@ -1,21 +1,35 @@
-==========
-CloudFlare
-==========
+===============
+cloudflare-ddns
+===============
 
 The Python DDNS(Dynamic DNS) script for CloudFlare. It can sync your public IP address to DNS records on CloudFlare. It also provide the RESTful API to operate CloudFlare API v4.
+
+Installation
+------------
+
+.. code:: shell
+
+    pip install cloudflare-ddns
 
 Examples
 --------
 
-1. Sync your public ip address to dns record on CloudFlare from command line
+1. Sync your public IP address to dns record on CloudFlare
 
-    :code:`cloudflare-ddns email api_key domain`
+- Command line
 
-or
+.. code:: shell
 
-    :code:`python -m cloudflare_ddns email api_key domain`
+    cloudflare-ddns email api_key domain
 
-2. Sync your public ip address to dns record on CloudFlare from code
+- Python execute package
+
+.. code:: shell
+
+    python -m cloudflare_ddns email api_key domain
+
+
+- Python code
 
 .. code:: python
 
@@ -23,7 +37,7 @@ or
     cf = CloudFlare(email, api_key, domain)
     cf.sync_dns_from_my_ip() #Successfully updated IP address from xx.xx.xx.xx to xx.xx.xx.xx
 
-3. RESTful dns record operation
+2. RESTful dns record operation
 
 .. code:: python
 

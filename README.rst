@@ -7,20 +7,27 @@ The Python DDNS(Dynamic DNS) script for CloudFlare. It can sync your public IP a
 Examples
 --------
 
-1. Sync your public ip address to dns record on CloudFlare
+1. Sync your public ip address to dns record on CloudFlare from command line
 
-import CloudFlare from cloudflare
+    :code:`cloudflare-ddns email api_key domain`
+
+or
+
+    :code:`python -m cloudflare_ddns email api_key domain`
+
+2. Sync your public ip address to dns record on CloudFlare from code
 
 .. code:: python
 
-    cf = CloudFlare(your_email, your_api_key, 'example.com')
+    from cloudflare_ddns import CloudFlare
+    cf = CloudFlare(email, api_key, domain)
     cf.sync_dns_from_my_ip() #Successfully updated IP address from xx.xx.xx.xx to xx.xx.xx.xx
 
-2. RESTful dns record operation
+3. RESTful dns record operation
 
 .. code:: python
 
-    cf.get_record('A', 'sub.example.com')
+    cf.get_record('A', 'example.com')
 
 .. code:: python
 
@@ -28,13 +35,13 @@ import CloudFlare from cloudflare
 
 .. code:: python
 
-    cf.update_record('A', 'sub.example.com', '202.202.202.202')
+    cf.update_record('A', 'another.example.com', '202.202.202.202')
 
 .. code:: python
 
-    cf.delete_record('A', 'sub.example.com')
+    cf.delete_record('A', 'another.example.com')
 
-*Please note: The class will cache dns records information it gets from CloudFlare. To refresh cache, use 'refresh' method:*
+*Please note: The class will cache dns records information it gets from CloudFlare. To refresh cache, call 'refresh' method:*
 
 .. code:: python
 

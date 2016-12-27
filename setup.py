@@ -21,12 +21,17 @@ setup(
     license='MIT',
     keywords='cloudflare ddns',
     classifiers=[
-        'Development Status :: 1 - Release Candidate',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Programming Language :: Python :: 3'
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'cloudflare-ddns=cloudflare_ddns.cloudflare:main'
+        ],
+    }
 )

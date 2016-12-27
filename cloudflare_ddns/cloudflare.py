@@ -2,9 +2,20 @@
 CloudFlare dns tools.
 """
 import sys
+import argparse
 import urllib.parse
 import requests
 from .exceptions import ZoneNotFound, RecordNotFound
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('email')
+    parser.add_argument('api_key')
+    parser.add_argument('domain')
+    args = parser.parse_args()
+    cf = CloudFlare(**vars(args))
+    cf.sync_dns_from_my_ip()
 
 
 class CloudFlare:

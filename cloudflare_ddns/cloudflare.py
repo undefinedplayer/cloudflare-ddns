@@ -3,6 +3,7 @@ CloudFlare dns tools.
 """
 import sys
 import argparse
+import socket
 import urllib.parse
 import requests
 from .exceptions import ZoneNotFound, RecordNotFound
@@ -37,8 +38,9 @@ class CloudFlare:
     dns_records = None
 
     public_ip_finder = (
+        'https://api.ipify.org/',
         'https://jsonip.com/',
-        'https://ifconfig.co/json/'
+        'https://ifconfig.co/json'
     )
 
     def __init__(self, email: str, api_key: str, domain: str):
@@ -216,12 +218,25 @@ class CloudFlare:
         """
         ip_address = ''
         for finder in self.public_ip_finder:
-            result = requests.get(finder)
+            try:
+                result = requests.get(finder)
+            except requests.RequestException:
+                continue
             if result.status_code == 200:
-                ip_address = result.json()['ip']
-                break
+                try:
+                    socket.inet_aton(result.text)
+                    ip_address = result.text
+                    break
+                except socket.error:
+                    try:
+                        socket.inet_aton(result.json().get('ip'))
+                        ip_address = result.json()['ip']
+                        break
+                    except socket.error:
+                        continue
+
         if ip_address == '':
-            print('Either of public ip finder is not working. Please try later')
+            print('None of public ip finder is working. Please try later')
             sys.exit(1)
         record = self.get_record(dns_type, self.zone['name'])
         if record['content'] != ip_address:

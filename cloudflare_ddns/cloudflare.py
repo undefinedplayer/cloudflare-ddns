@@ -73,7 +73,7 @@ class CloudFlare:
         response = method(
             url,
             headers=self.headers,
-            data=self.process_json_for_cloudflare(data)
+            data=self.process_json_for_cloudflare(data) if data else None
         )
         content = response.json()
         if response.status_code != 200:
@@ -97,7 +97,7 @@ class CloudFlare:
         self.zone = zone
 
         # Initialize dns_records of current zone
-        dns_content = self.request(self.api_url + '/' + zone['id'] + '/dns_records', 'get')
+        dns_content = self.request(self.api_url + zone['id'] + '/dns_records', 'get')
         self.dns_records = dns_content['result']
 
     def refresh(self):
@@ -120,7 +120,7 @@ class CloudFlare:
         except IndexError:
             raise RecordNotFound(
                 'Cannot find the specified dns record in domain {domain}'
-                .format(domain=self.domain))
+                .format(domain=name))
         return record
 
     def create_record(self, dns_type, name, content, **kwargs):
@@ -144,8 +144,8 @@ class CloudFlare:
         else:
             data['proxied'] = True
         content = self.request(
-            urllib.parse.urljoin(self.api_url, self.zone['id'], self.zone['id'] + '/dns_records'),
-            'put',
+            self.api_url + self.zone['id'] + '/dns_records',
+            'post',
             data=data
         )
         print('DNS record successfully created')

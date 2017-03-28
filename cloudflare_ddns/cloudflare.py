@@ -243,16 +243,21 @@ class CloudFlare:
             print('None of public ip finder is working. Please try later')
             sys.exit(1)
 
-        record = self.get_record(dns_type, self.domain) \
-            if len(self.domain.split('.')) == 3 \
-            else self.get_record(dns_type, self.domain)
-
-        if record['content'] != ip_address:
-            self.update_record(dns_type, self.domain, ip_address)
-            print('Successfully updated IP address from {old_ip} to {new_ip}'
-                  .format(old_ip=record['content'], new_ip=ip_address))
+        try:
+            record = self.get_record(dns_type, self.domain) \
+                if len(self.domain.split('.')) == 3 \
+                else self.get_record(dns_type, self.domain)
+        except RecordNotFound:
+            self.create_record(dns_type, self.domain, ip_address)
+            print('Successfully created new record with IP address {new_ip}'
+                  .format(new_ip=ip_address))
         else:
-            print('IP address on CloudFlare is same as your current address')
+            if record['content'] != ip_address:
+                self.update_record(dns_type, self.domain, ip_address)
+                print('Successfully updated IP address from {old_ip} to {new_ip}'
+                      .format(old_ip=record['content'], new_ip=ip_address))
+            else:
+                print('IP address on CloudFlare is same as your current address')
 
     @staticmethod
     def process_json_for_cloudflare(data_dict):

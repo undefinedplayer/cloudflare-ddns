@@ -14,6 +14,8 @@ def main():
     parser.add_argument('email')
     parser.add_argument('api_key')
     parser.add_argument('domain')
+    parser.add_argument('--disable_proxied', '-d', dest='disable_proxied', action='store_true', default=False,
+                        help='Disable the Cloudflare proxy for the record')
     args = parser.parse_args()
     cf = CloudFlare(**vars(args))
     cf.sync_dns_from_my_ip()
@@ -29,6 +31,8 @@ class CloudFlare:
 
     api_key = ''
 
+    disable_proxied = False
+
     headers = None
 
     domain = None
@@ -43,17 +47,19 @@ class CloudFlare:
         'https://ifconfig.co/json'
     )
 
-    def __init__(self, email: str, api_key: str, domain: str):
+    def __init__(self, email: str, api_key: str, domain: str, disable_proxied: bool):
         """
         Initialization. It will set the zone information of the domain for operation.
         It will also get dns records of the current zone.
         :param email:
         :param api_key:
         :param domain:
+        :param disable_proxied:
         """
         self.email = email
         self.api_key = api_key
         self.domain = domain
+        self.disable_proxied = disable_proxied
         self.headers = {
             'X-Auth-Key': api_key,
             'X-Auth-Email': email,
@@ -253,7 +259,10 @@ class CloudFlare:
                   .format(new_ip=ip_address))
         else:
             if record['content'] != ip_address:
-                self.update_record(dns_type, self.domain, ip_address)
+                if self.disable_proxied:
+                    self.update_record(dns_type, self.domain, ip_address, proxied=False)
+                else:
+                    self.update_record(dns_type, self.domain, ip_address)
                 print('Successfully updated IP address from {old_ip} to {new_ip}'
                       .format(old_ip=record['content'], new_ip=ip_address))
             else:

@@ -33,11 +33,17 @@ Examples
 
         cloudflare-ddns email api_key domain
 
+    - Print command line help
+
+    .. code:: shell
+
+        cloudflare-ddns --help
+
     - Execute python package in command line
 
     .. code:: shell
 
-        python -m cloudflare_ddns email api_key domain
+        python -m cloudflare_ddns email api_key domain --disable_proxied
 
 
     - Python code

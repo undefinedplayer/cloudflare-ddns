@@ -1,6 +1,17 @@
 ===============
 cloudflare-ddns
 ===============
+.. image:: https://img.shields.io/pypi/v/cloudflare-ddns.svg
+    :target: https://pypi.python.org/pypi/cloudflare-ddns
+
+.. image:: https://img.shields.io/pypi/l/cloudflare-ddns.svg
+    :target: https://pypi.python.org/pypi/cloudflare-ddns
+
+.. image:: https://img.shields.io/pypi/wheel/cloudflare-ddns.svg
+    :target: https://pypi.python.org/pypi/cloudflare-ddns
+
+.. image:: https://img.shields.io/pypi/pyversions/cloudflare-ddns.svg
+    :target: https://pypi.python.org/pypi/cloudflare-ddns
 
 The Python DDNS(Dynamic DNS) script for CloudFlare. It can sync your public IP address to DNS records on CloudFlare. It also provide the RESTful API to operate CloudFlare API v4.
 

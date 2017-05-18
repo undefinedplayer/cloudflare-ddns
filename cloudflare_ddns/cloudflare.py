@@ -254,7 +254,10 @@ class CloudFlare:
                 if len(self.domain.split('.')) == 3 \
                 else self.get_record(dns_type, self.domain)
         except RecordNotFound:
-            self.create_record(dns_type, self.domain, ip_address)
+            if self.proxied:
+                self.create_record(dns_type, self.domain, ip_address, proxied=True)
+            else:
+                self.create_record(dns_type, self.domain, ip_address)
             print('Successfully created new record with IP address {new_ip}'
                   .format(new_ip=ip_address))
         else:

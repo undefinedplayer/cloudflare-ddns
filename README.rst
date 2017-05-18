@@ -43,7 +43,7 @@ Examples
 
     .. code:: shell
 
-        python -m cloudflare_ddns email api_key domain --disable_proxied
+        python -m cloudflare_ddns email api_key domain --proxied
 
 
     - Python code

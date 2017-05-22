@@ -14,6 +14,8 @@ def main():
     parser.add_argument('email')
     parser.add_argument('api_key')
     parser.add_argument('domain')
+    parser.add_argument('--proxied', '-p', dest='proxied', action='store_true', default=False,
+                        help='Enable the Cloudflare proxy for the record')
     args = parser.parse_args()
     cf = CloudFlare(**vars(args))
     cf.sync_dns_from_my_ip()
@@ -29,6 +31,8 @@ class CloudFlare:
 
     api_key = ''
 
+    proxied = False
+
     headers = None
 
     domain = None
@@ -43,17 +47,19 @@ class CloudFlare:
         'https://ifconfig.co/json'
     )
 
-    def __init__(self, email: str, api_key: str, domain: str):
+    def __init__(self, email: str, api_key: str, domain: str, proxied: bool):
         """
         Initialization. It will set the zone information of the domain for operation.
         It will also get dns records of the current zone.
         :param email:
         :param api_key:
         :param domain:
+        :param proxied:
         """
         self.email = email
         self.api_key = api_key
         self.domain = domain
+        self.proxied = proxied
         self.headers = {
             'X-Auth-Key': api_key,
             'X-Auth-Email': email,
@@ -143,10 +149,10 @@ class CloudFlare:
         }
         if kwargs.get('ttl') and kwargs['ttl'] != 1:
             data['ttl'] = kwargs['ttl']
-        if kwargs.get('proxied') is False:
-            data['proxied'] = False
-        else:
+        if kwargs.get('proxied') is True:
             data['proxied'] = True
+        else:
+            data['proxied'] = False
         content = self.request(
             self.api_url + self.zone['id'] + '/dns_records',
             'post',
@@ -172,10 +178,10 @@ class CloudFlare:
         }
         if kwargs.get('ttl') and kwargs['ttl'] != 1:
             data['ttl'] = kwargs['ttl']
-        if kwargs.get('proxied') is False:
-            data['proxied'] = False
-        else:
+        if kwargs.get('proxied') is True:
             data['proxied'] = True
+        else:
+            data['proxied'] = False
         content = self.request(
             urllib.parse.urljoin(self.api_url, self.zone['id'] + '/dns_records/' + record['id']),
             'put',
@@ -248,12 +254,18 @@ class CloudFlare:
                 if len(self.domain.split('.')) == 3 \
                 else self.get_record(dns_type, self.domain)
         except RecordNotFound:
-            self.create_record(dns_type, self.domain, ip_address)
+            if self.proxied:
+                self.create_record(dns_type, self.domain, ip_address, proxied=True)
+            else:
+                self.create_record(dns_type, self.domain, ip_address)
             print('Successfully created new record with IP address {new_ip}'
                   .format(new_ip=ip_address))
         else:
             if record['content'] != ip_address:
-                self.update_record(dns_type, self.domain, ip_address)
+                if self.proxied:
+                    self.update_record(dns_type, self.domain, ip_address, proxied=True)
+                else:
+                    self.update_record(dns_type, self.domain, ip_address)
                 print('Successfully updated IP address from {old_ip} to {new_ip}'
                       .format(old_ip=record['content'], new_ip=ip_address))
             else:

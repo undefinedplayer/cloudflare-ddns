@@ -266,12 +266,13 @@ class CloudFlare:
                   .format(new_ip=ip_address))
         else:
             if record['content'] != ip_address:
+                old_ip = record['content']
                 if self.proxied:
                     self.update_record(dns_type, self.domain, ip_address, proxied=True)
                 else:
                     self.update_record(dns_type, self.domain, ip_address)
                 print('Successfully updated IP address from {old_ip} to {new_ip}'
-                      .format(old_ip=record['content'], new_ip=ip_address))
+                      .format(old_ip=old_ip, new_ip=ip_address))
             else:
                 print('IP address on CloudFlare is same as your current address')
 

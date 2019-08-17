@@ -62,8 +62,7 @@ class CloudFlare:
         self.proxied = proxied
         self.headers = {
             'X-Auth-Key': api_key,
-            'X-Auth-Email': email,
-            'Content-Type': 'application/json'
+            'X-Auth-Email': email
         }
         self.setup_zone()
 
@@ -79,7 +78,7 @@ class CloudFlare:
         response = method(
             url,
             headers=self.headers,
-            data=self.process_json_for_cloudflare(data) if data else None
+            json=data
         )
         content = response.json()
         if response.status_code != 200:
@@ -264,12 +263,3 @@ class CloudFlare:
                       .format(old_ip=record['content'], new_ip=ip_address))
             else:
                 print('IP address on CloudFlare is same as your current address')
-
-    @staticmethod
-    def process_json_for_cloudflare(data_dict):
-        """
-        Need to process the data because of the odd format requirement from CloudFlare
-        :param data_dict:
-        :return:
-        """
-        return str(data_dict).replace('"', 'double_quote').replace("'", '"').replace('double_quote', "'")

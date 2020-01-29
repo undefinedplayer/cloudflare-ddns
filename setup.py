@@ -10,12 +10,12 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='cloudflare-ddns',
-    version='1.2.0',
+    version='1.3.0',
     description='DDNS script to sync public IP address to CloudFlare dns records',
     long_description=README,
-    url='https://github.com/shlinx/cloudflare-ddns',
+    url='https://github.com/ailionx/cloudflare-ddns',
     author='Shawn Lin',
-    author_email='shawnxiaolin@gmail.com',
+    author_email='ailionxy@gmail.com',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     include_package_data=True,
     license='MIT',
@@ -26,8 +26,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
     ],
     install_requires=[
         'requests'

@@ -62,8 +62,7 @@ class CloudFlare:
         self.proxied = proxied
         self.headers = {
             'X-Auth-Key': api_key,
-            'X-Auth-Email': email,
-            'Content-Type': 'application/json'
+            'X-Auth-Email': email
         }
         self.setup_zone()
 
@@ -79,7 +78,7 @@ class CloudFlare:
         response = method(
             url,
             headers=self.headers,
-            data=self.process_json_for_cloudflare(data) if data else None
+            json=data
         )
         content = response.json()
         if response.status_code != 200:
@@ -258,29 +257,14 @@ class CloudFlare:
                 if len(self.domain.split('.')) == 3 \
                 else self.get_record(dns_type, self.domain)
         except RecordNotFound:
-            if self.proxied:
-                self.create_record(dns_type, self.domain, ip_address, proxied=True)
-            else:
-                self.create_record(dns_type, self.domain, ip_address)
+            self.create_record(dns_type, self.domain, ip_address, proxied=self.proxied)
             print('Successfully created new record with IP address {new_ip}'
                   .format(new_ip=ip_address))
         else:
             if record['content'] != ip_address:
                 old_ip = record['content']
-                if self.proxied:
-                    self.update_record(dns_type, self.domain, ip_address, proxied=True)
-                else:
-                    self.update_record(dns_type, self.domain, ip_address)
+                self.update_record(dns_type, self.domain, ip_address, proxied=record['proxied'])
                 print('Successfully updated IP address from {old_ip} to {new_ip}'
                       .format(old_ip=old_ip, new_ip=ip_address))
             else:
                 print('IP address on CloudFlare is same as your current address')
-
-    @staticmethod
-    def process_json_for_cloudflare(data_dict):
-        """
-        Need to process the data because of the odd format requirement from CloudFlare
-        :param data_dict:
-        :return:
-        """
-        return str(data_dict).replace('"', 'double_quote').replace("'", '"').replace('double_quote', "'")

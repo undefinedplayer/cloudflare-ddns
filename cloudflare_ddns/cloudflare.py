@@ -47,7 +47,7 @@ class CloudFlare:
         'https://ifconfig.co/json'
     )
 
-    def __init__(self, email: str, api_key: str, domain: str, proxied: bool):
+    def __init__(self, email: str, api_key: str, domain: str, proxied: bool = False):
         """
         Initialization. It will set the zone information of the domain for operation.
         It will also get dns records of the current zone.

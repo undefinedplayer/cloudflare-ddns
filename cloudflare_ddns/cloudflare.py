@@ -157,6 +157,7 @@ class CloudFlare:
             'post',
             data=data
         )
+        self.dns_records.append(content['result'])
         print('DNS record successfully created')
         return content['result']
 
@@ -186,6 +187,7 @@ class CloudFlare:
             'put',
             data=data
         )
+        record.update(content['result'])
         print('DNS record successfully updated')
         return content['result']
 
@@ -215,6 +217,8 @@ class CloudFlare:
             urllib.parse.urljoin(self.api_url, self.zone['id'] + '/dns_records/' + record['id']),
             'delete'
         )
+        cached_record_id = [i for i, rec in enumerate(self.dns_records) if rec['id'] == content['result']['id']][0]
+        del self.dns_records[cached_record_id]
         return content['result']['id']
 
     def sync_dns_from_my_ip(self, dns_type='A'):
@@ -258,8 +262,9 @@ class CloudFlare:
                   .format(new_ip=ip_address))
         else:
             if record['content'] != ip_address:
+                old_ip = record['content']
                 self.update_record(dns_type, self.domain, ip_address, proxied=record['proxied'])
                 print('Successfully updated IP address from {old_ip} to {new_ip}'
-                      .format(old_ip=record['content'], new_ip=ip_address))
+                      .format(old_ip=old_ip, new_ip=ip_address))
             else:
                 print('IP address on CloudFlare is same as your current address')

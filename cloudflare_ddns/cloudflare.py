@@ -94,15 +94,21 @@ class CloudFlare:
         """
         # Initialize current zone
         zones_content = self.request(self.api_url, 'get')
+        domain_segments = self.domain.split(".")
+        
+        # Join the last two segments of the domain name.
+        domain = domain_segments[-2] + "." + domain_segments[-1]
+        
         try:
-            if len(self.domain.split('.')) == 3:
-                domain = self.domain.split('.', 1)[1]
-            else:
-                domain = self.domain
             zone = [zone for zone in zones_content['result'] if zone['name'] == domain][0]
         except IndexError:
-            raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
-                               .format(domain=self.domain))
+            # if that's not on the list, try with three segments instead
+            domain = domain_segments[-3] + "." + domain
+            try:
+                zone = [zone for zone in zones_content['result'] if zone['name'] == domain][0]
+            except IndexError:
+                raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
+                                   .format(domain=self.domain))
         self.zone = zone
 
         # Initialize dns_records of current zone

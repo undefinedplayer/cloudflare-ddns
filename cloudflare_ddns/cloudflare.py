@@ -94,9 +94,9 @@ class CloudFlare:
         """
         # Initialize current zone
         zones_content = self.request(self.api_url, 'get')
-        domain_segments=self.domain.split(".")
+        domain_segments = self.domain.split(".")
         
-        #join the last two segments of the domain name.
+        # Join the last two segments of the domain name.
         domain = domain_segments[-2] + "." + domain_segments[-1]
         
         try:

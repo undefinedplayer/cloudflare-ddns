@@ -112,7 +112,7 @@ class CloudFlare:
         self.zone = zone
 
         # Initialize dns_records of current zone
-        dns_content = self.request(self.api_url + zone['id'] + '/dns_records', 'get')
+        dns_content = self.request(self.api_url + zone['id'] + '/dns_records?per_page=100', 'get')
         self.dns_records = dns_content['result']
 
     def refresh(self):

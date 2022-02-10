@@ -43,7 +43,7 @@ class CloudFlare:
 
     public_ip_finder = (
         'https://api.ipify.org/',
-        'https://jsonip.com/',
+        'https://ipinfo.io/json',
         'https://ifconfig.co/json'
     )
 

@@ -69,7 +69,7 @@ class CloudFlare:
 
     def request(self, url, method, data=None):
         """
-        The requester shortcut to submit a http request to CloutFlare
+        The requester shortcut to submit a http request to CloudFlare
         :param url:
         :param method:
         :param data:

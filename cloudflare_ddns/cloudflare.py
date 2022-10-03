@@ -109,8 +109,7 @@ class CloudFlare:
             try:
                 zone = [zone for zone in zones_content['result'] if zone['name'] == domain][0]
             except IndexError:
-                raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
-                                   .format(domain=self.domain))
+                raise ZoneNotFound(f'Cannot find zone information for the domain {self.domain}.')
         self.zone = zone
 
         # Initialize dns_records of current zone
@@ -136,8 +135,8 @@ class CloudFlare:
                       if record['type'] == dns_type and record['name'] == name][0]
         except IndexError:
             raise RecordNotFound(
-                'Cannot find the specified dns record in domain {domain}'
-                .format(domain=name))
+                f'Cannot find the specified dns record in domain {name}'
+            )
         return record
 
     def create_record(self, dns_type, name, content, **kwargs):
@@ -269,13 +268,14 @@ class CloudFlare:
                 else self.get_record(dns_type, self.domain)
         except RecordNotFound:
             self.create_record(dns_type, self.domain, ip_address, proxied=self.proxied)
-            print('Successfully created new record with IP address {new_ip}'
-                  .format(new_ip=ip_address))
+            if self.print_messages:
+                print(f'Successfully created new record with IP address {ip_address}')
         else:
             if record['content'] != ip_address:
                 old_ip = record['content']
                 self.update_record(dns_type, self.domain, ip_address, proxied=record['proxied'])
-                print('Successfully updated IP address from {old_ip} to {new_ip}'
-                      .format(old_ip=old_ip, new_ip=ip_address))
+                if self.print_messages:
+                    print(f'Successfully updated IP address from {old_ip} to {ip_address}')
             else:
-                print('IP address on CloudFlare is same as your current address')
+                if self.print_messages:
+                    print('IP address on CloudFlare is same as your current address')

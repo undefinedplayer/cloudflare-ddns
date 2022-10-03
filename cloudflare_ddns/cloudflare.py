@@ -91,7 +91,7 @@ class CloudFlare:
     def setup_zone(self):
         """
         Setup zone for current domain.
-        It will also setup the dns records of the zone
+        It will also set up the dns records of the zone
         :return:
         """
         # Initialize current zone

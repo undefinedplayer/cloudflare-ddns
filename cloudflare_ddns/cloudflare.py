@@ -47,7 +47,7 @@ class CloudFlare:
         'https://ifconfig.co/json'
     )
 
-    def __init__(self, email: str, api_key: str, domain: str, proxied: bool = False):
+    def __init__(self, email: str, api_key: str, domain: str, proxied: bool = False, print_messages: bool = False):
         """
         Initialization. It will set the zone information of the domain for operation.
         It will also get dns records of the current zone.
@@ -64,6 +64,7 @@ class CloudFlare:
             'X-Auth-Key': api_key,
             'X-Auth-Email': email
         }
+        self.print_messages = print_messages
         self.setup_zone()
 
     def request(self, url, method, data=None):
@@ -82,7 +83,8 @@ class CloudFlare:
         )
         content = response.json()
         if response.status_code != 200:
-            print(content)
+            if self.print_messages:
+                print(content)
             raise requests.HTTPError(content['message'])
         return content
 
@@ -164,7 +166,8 @@ class CloudFlare:
             data=data
         )
         self.dns_records.append(content['result'])
-        print('DNS record successfully created')
+        if self.print_messages:
+            print('DNS record successfully created')
         return content['result']
 
     def update_record(self, dns_type, name, content, **kwargs):
@@ -194,7 +197,8 @@ class CloudFlare:
             data=data
         )
         record.update(content['result'])
-        print('DNS record successfully updated')
+        if self.print_messages:
+            print('DNS record successfully updated')
         return content['result']
 
     def create_or_update_record(self, dns_type, name, content, **kwargs):
@@ -255,7 +259,8 @@ class CloudFlare:
                         continue
 
         if ip_address == '':
-            print('None of public ip finder is working. Please try later')
+            if self.print_messages:
+                print('None of public ip finder is working. Please try later')
             sys.exit(1)
 
         try:

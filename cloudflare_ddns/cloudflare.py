@@ -47,7 +47,7 @@ class CloudFlare:
         'https://ifconfig.co/json'
     )
 
-    def __init__(self, email: str, api_key: str, domain: str, proxied: bool = False):
+    def __init__(self, email: str, api_key: str, domain: str, proxied: bool = False, print_messages: bool = True):
         """
         Initialization. It will set the zone information of the domain for operation.
         It will also get dns records of the current zone.
@@ -64,11 +64,12 @@ class CloudFlare:
             'X-Auth-Key': api_key,
             'X-Auth-Email': email
         }
+        self.print_messages = print_messages
         self.setup_zone()
 
     def request(self, url, method, data=None):
         """
-        The requester shortcut to submit a http request to CloutFlare
+        The requester shortcut to submit a http request to CloudFlare
         :param url:
         :param method:
         :param data:
@@ -82,14 +83,15 @@ class CloudFlare:
         )
         content = response.json()
         if response.status_code != 200:
-            print(content)
+            if self.print_messages:
+                print(content)
             raise requests.HTTPError(content['message'])
         return content
 
     def setup_zone(self):
         """
         Setup zone for current domain.
-        It will also setup the dns records of the zone
+        It will also set up the dns records of the zone
         :return:
         """
         # Initialize current zone
@@ -107,8 +109,7 @@ class CloudFlare:
             try:
                 zone = [zone for zone in zones_content['result'] if zone['name'] == domain][0]
             except IndexError:
-                raise ZoneNotFound('Cannot find zone information for the domain {domain}.'
-                                   .format(domain=self.domain))
+                raise ZoneNotFound(f'Cannot find zone information for the domain {self.domain}.')
         self.zone = zone
 
         # Initialize dns_records of current zone
@@ -134,8 +135,8 @@ class CloudFlare:
                       if record['type'] == dns_type and record['name'] == name][0]
         except IndexError:
             raise RecordNotFound(
-                'Cannot find the specified dns record in domain {domain}'
-                .format(domain=name))
+                f'Cannot find the specified dns record in domain {name}'
+            )
         return record
 
     def create_record(self, dns_type, name, content, **kwargs):
@@ -164,7 +165,8 @@ class CloudFlare:
             data=data
         )
         self.dns_records.append(content['result'])
-        print('DNS record successfully created')
+        if self.print_messages:
+            print('DNS record successfully created')
         return content['result']
 
     def update_record(self, dns_type, name, content, **kwargs):
@@ -194,7 +196,8 @@ class CloudFlare:
             data=data
         )
         record.update(content['result'])
-        print('DNS record successfully updated')
+        if self.print_messages:
+            print('DNS record successfully updated')
         return content['result']
 
     def create_or_update_record(self, dns_type, name, content, **kwargs):
@@ -255,7 +258,8 @@ class CloudFlare:
                         continue
 
         if ip_address == '':
-            print('None of public ip finder is working. Please try later')
+            if self.print_messages:
+                print('None of public ip finder is working. Please try later')
             sys.exit(1)
 
         try:
@@ -264,13 +268,14 @@ class CloudFlare:
                 else self.get_record(dns_type, self.domain)
         except RecordNotFound:
             self.create_record(dns_type, self.domain, ip_address, proxied=self.proxied)
-            print('Successfully created new record with IP address {new_ip}'
-                  .format(new_ip=ip_address))
+            if self.print_messages:
+                print(f'Successfully created new record with IP address {ip_address}')
         else:
             if record['content'] != ip_address:
                 old_ip = record['content']
                 self.update_record(dns_type, self.domain, ip_address, proxied=record['proxied'])
-                print('Successfully updated IP address from {old_ip} to {new_ip}'
-                      .format(old_ip=old_ip, new_ip=ip_address))
+                if self.print_messages:
+                    print(f'Successfully updated IP address from {old_ip} to {ip_address}')
             else:
-                print('IP address on CloudFlare is same as your current address')
+                if self.print_messages:
+                    print('IP address on CloudFlare is same as your current address')
